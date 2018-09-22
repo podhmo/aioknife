@@ -47,28 +47,30 @@ class Group:
     def go(self, fn, *args, **kwargs):
         return self.tasks.append(("task", fn, args, kwargs))
 
+    def wait(self):
+        coro = self.coroutinefunction()
+        return self.loop.run_until_complete(coro)
+
     @contextlib.contextmanager
     def __call__(self, fn, *args, **kwargs):
         lazy_actx = _LazyAsyncContextManager(fn)
         self.tasks.append(("actx", lazy_actx, args, kwargs))
         yield lazy_actx
 
-    def wait(self):
-        async def run():
-            tasks = []
-            async with contextlib.AsyncExitStack() as s:
-                for kind, lazy_actx, args, kwargs in self.tasks:
-                    if kind == "actx":
-                        actx = lazy_actx.fn(*args, **kwargs)
-                        await s.enter_async_context(actx)
-                        lazy_actx._bind(actx)
+    async def coroutinefunction(self, *, loop=None):
+        tasks = []
+        loop = loop or self.loop
+        async with contextlib.AsyncExitStack() as s:
+            for kind, lazy_actx, args, kwargs in self.tasks:
+                if kind == "actx":
+                    actx = lazy_actx.fn(*args, **kwargs)
+                    await s.enter_async_context(actx)
+                    lazy_actx._bind(actx)
 
-                for kind, fn, args, kwargs in self.tasks:
-                    if kind == "task":
-                        tasks.append(self._create_task(fn, args, kwargs))
-                return await asyncio.gather(*tasks, loop=self.loop)
-
-        return self.loop.run_until_complete(run())
+            for kind, fn, args, kwargs in self.tasks:
+                if kind == "task":
+                    tasks.append(self._create_task(fn, args, kwargs))
+            return await asyncio.gather(*tasks, loop=loop)
 
     async def _create_task(self, fn, args, kwargs):
         async with contextlib.AsyncExitStack() as s:
