@@ -1,1 +1,1 @@
-from aioknife.group import Group
+from aioknife.group import Group  # noqa
