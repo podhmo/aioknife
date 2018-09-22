@@ -1,7 +1,10 @@
 import asyncio
 import contextlib
-from functools import partial
-from .langhelpers import reify
+from .langhelpers import (
+    reify,
+    get_event_loop,
+    run_async_contextually,
+)
 
 
 class _LazyAsyncContextManager:
@@ -42,7 +45,7 @@ class Group:
 
     @reify
     def loop(self):
-        return asyncio.get_event_loop()
+        return get_event_loop()
 
     def go(self, fn, *args, **kwargs):
         return self.tasks.append(("task", fn, args, kwargs))
@@ -76,9 +79,4 @@ class Group:
         async with contextlib.AsyncExitStack() as s:
             for actx in self.middleware:
                 await s.enter_async_context(actx)
-
-            if asyncio.iscoroutinefunction(fn):
-                return await fn(*args, **kwargs)
-            else:
-                fn = partial(fn, *args, **kwargs)
-                return await self.loop.run_in_executor(None, fn)
+            return await run_async_contextually(self.loop, fn, args, kwargs)

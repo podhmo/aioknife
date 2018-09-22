@@ -1,3 +1,16 @@
+import asyncio
+from functools import partial
+from asyncio import get_event_loop  # noqa
+
+
+def run_async_contextually(loop, fn, args, kwargs):
+    if asyncio.iscoroutinefunction(fn):
+        return fn(*args, **kwargs)
+    else:
+        fn = partial(fn, *args, **kwargs)
+        return loop.run_in_executor(None, fn)
+
+
 class reify(object):
     """cached property"""
 
