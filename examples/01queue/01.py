@@ -1,7 +1,7 @@
 import asyncio
 import time
 import logging
-from aioknife.syncike import Background
+from aioknife.synclike import Background
 logger = logging.getLogger(__name__)
 
 
