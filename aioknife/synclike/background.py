@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from .langhelpers import (
+from aioknife.langhelpers import (
     reify,
     get_event_loop,
     run_async_contextually,

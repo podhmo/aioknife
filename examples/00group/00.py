@@ -1,6 +1,6 @@
 import logging
 import time
-from aioknife import Group
+from aioknife.synclike import Group
 import fakes
 
 logging.basicConfig(level=logging.DEBUG)

@@ -4,7 +4,7 @@ import time
 
 class Tests(unittest.TestCase):
     def _makeOne(self, *args, **kwargs):
-        from aioknife import Group
+        from aioknife.synclike import Group
         return Group(*args, **kwargs)
 
     def test_it__sync(self):
