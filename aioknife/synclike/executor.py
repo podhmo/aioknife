@@ -1,7 +1,6 @@
 import typing as t
 import logging
 import asyncio
-import contextlib
 from aioknife.aq import AQ
 from aioknife.debug import Inspector
 
@@ -29,7 +28,7 @@ class Executor:
         self.aq = AQ(self._loop, q=self._q)
         self.futs = []
 
-    def submit(self, afn, *args, **kwargs) -> asyncio.Future:
+    def register(self, afn, *args, **kwargs) -> asyncio.Future:
         return self.aq.add(afn, args=args, kwargs=kwargs)
 
     def __enter__(self):
@@ -43,11 +42,11 @@ class Executor:
         return submit
 
     def __exit__(self, a, b, c):
-        self._loop.run_until_complete(self.run())
+        self._loop.run_until_complete(self.execute())
         for fut in self.futs:
             fut.result()
 
-    async def run(self):
+    async def execute(self):
         n = self.concurrency
         aq = self.aq
         q = aq.q
