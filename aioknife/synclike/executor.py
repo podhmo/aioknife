@@ -29,24 +29,36 @@ class Executor:
         self.futs = []
 
     def register(self, afn, *args, **kwargs) -> asyncio.Future:
-        return self.aq.add(afn, args=args, kwargs=kwargs)
+        fut = self.aq.add(afn, args=args, kwargs=kwargs)
+        self.futs.append(fut)
+        if self._callback is not None:
+            fut.add_done_callback(self._callback)
+        return fut
 
     def __enter__(self):
-        def submit(afn, *args, **kwargs) -> asyncio.Future:
-            fut = self.aq.add(afn, args=args, kwargs=kwargs)
-            self.futs.append(fut)
-            if self._callback is not None:
-                fut.add_done_callback(self._callback)
-            return fut
-
-        return submit
+        return self.register
 
     def __exit__(self, a, b, c):
-        self._loop.run_until_complete(self.execute())
+        self._loop.run_until_complete(self._execute())
         for fut in self.futs:
             fut.result()
 
-    async def execute(self):
+    async def execute(self, *, return_exceptions=False):
+        await self._execute()
+
+        if not return_exceptions:
+            return [fut.result() for fut in self.futs]
+
+        r = []
+        for fut in self.futs:
+            exc = fut.exception()
+            if exc is None:
+                r.append(fut.result())
+            else:
+                r.append(exc)
+        return r
+
+    async def _execute(self):
         n = self.concurrency
         aq = self.aq
         q = aq.q
