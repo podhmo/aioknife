@@ -1,5 +1,5 @@
 from .group import Group  # noqa
-from .executor import executor  # noqa
+from .executor import Executor  # noqa
 
 # TODO: documentation
 
@@ -28,7 +28,7 @@ async def run(i):
     print("after", i)
     return i
 
-with executor() as submit:
+with Executor() as submit:
     submit(run, 0)
     submit(run, 1)
     submit(run, 2)

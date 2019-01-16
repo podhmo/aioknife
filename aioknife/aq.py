@@ -18,6 +18,7 @@ class AQ:
 
     # todo: keyboard interrupt
     # todo: graceful shutdown
+    # todo: inspector and if debug option is true, show signature of function
 
     def __init__(
         self,
@@ -44,8 +45,14 @@ class AQ:
                 result = await afn(*args, **kwargs)
                 if callable(result):
                     action = "continue"
-                    logger.debug("task.continue[%r]	worker:%r", i, k)
-                    self.add(result, args=(), kwarg={}, _id=i)  # await?
+                    logger.debug(
+                        "task.continue[%r]	worker:%r	afn:%r, cont:%r",
+                        i,
+                        k,
+                        getattr(afn, "__name__", afn),
+                        getattr(result, "__name__", result),
+                    )
+                    self.add(result, args=(), kwargs={}, _id=i)  # await?
                 else:
                     action = "result"
                     logger.debug("task.result[%r]	worker:%r", i, k)
@@ -69,7 +76,9 @@ class AQ:
                     )
                     raise RuntimeError("action must not be None")
 
-                if not (self.q.empty() and action == "cancel"):
+                if (self.q.empty() and action == "cancel"):
+                    return
+                else:
                     fmt = "queue.done[%r]	worker:%r	action:%r	 %s"
                     logger.debug(fmt, i, k, action, format_queue(self.q))
                     self.q.task_done()
@@ -97,14 +106,14 @@ class AQ:
             self._workers.append(self.loop.create_task(t))
 
     def join(self):  # todo: timeout, todo: stop
+        return self.loop.run_until_complete(self.run())
+
+    async def run(self):
         if not self._started:
             raise RuntimeError("start() is not called, please calling this method, before join()")
 
-        async def _run():
-            await self.q.join()
-            logger.debug("worker.finished	workers:%d", len(self._workers))
-            for k, w in enumerate(self._workers):
-                w.cancel()
-            assert self.q._unfinished_tasks == 0 and self.q.qsize() == 0
-
-        return self.loop.run_until_complete(_run())
+        await self.q.join()
+        logger.debug("worker.finished	workers:%d", len(self._workers))
+        for k, w in enumerate(self._workers):
+            w.cancel()
+        assert self.q._unfinished_tasks == 0 and self.q.qsize() == 0
