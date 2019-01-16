@@ -22,7 +22,7 @@ class Background:
     ):
         if loop is not None:
             self.loop = loop
-        self.q = asyncio.Queue()
+        self.q = q or asyncio.Queue()
         self.concurrency = concurrency
         self.waittime = waittime
         self.tasks = []
@@ -96,3 +96,4 @@ class Background:
         for task in self.tasks:
             task.cancel()
         self.loop.stop()
+
