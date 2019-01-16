@@ -1,5 +1,5 @@
 from .group import Group  # noqa
-from .background import Background  # noqa
+from .executor import executor  # noqa
 
 # TODO: documentation
 
