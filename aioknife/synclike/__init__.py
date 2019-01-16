@@ -18,9 +18,9 @@ for i in range(10):
 got = g.wait()
 """
 
-# Background
+# executor
 """
-from aioknife.synclike import Background
+from aioknife.synclike import executor
 
 async def run(i):
     print("before", i)
@@ -28,9 +28,8 @@ async def run(i):
     print("after", i)
     return i
 
-with Background() as bk:
-    bk.add(run, 0)
-    bk.add(run, 1)
-    bk.add(run, 2)
-
+with executor() as submit:
+    submit(run, 0)
+    submit(run, 1)
+    submit(run, 2)
 """
